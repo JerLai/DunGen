@@ -5,6 +5,7 @@ namespace DunGen
     using System;
     using UnityEngine;
     using UnityEngine.UI;
+    using UnityEditor;
 
     public class MapManager : MonoBehaviour
     {
@@ -55,6 +56,21 @@ namespace DunGen
         }
         void GenerateMap()
         {
+            if (mapPositionsFloor != null)
+            {
+                // Clean map for now
+                for (int i = 0; i < mapWidth; i++)
+                {
+                    for (int j = 0; j < mapHeight; j++)
+                    {
+                        if (mapPositionsFloor[i, j] != null)
+                        {
+                            Destroy(mapPositionsFloor[i, j]);
+                        }
+                    }
+                }
+            }
+
             mapPositionsFloor = new GameObject[mapWidth, mapHeight];
             if (mapType == 0)
             {
@@ -74,17 +90,6 @@ namespace DunGen
    
         public void Generate()
         {
-            // Clean map for now
-            for (int i = 0; i < mapWidth; i++)
-            {
-                for (int j = 0; j < mapHeight; j++)
-                {
-                    if (mapPositionsFloor[i, j] != null)
-                    {
-                        Destroy(mapPositionsFloor[i, j]);
-                    }
-                }
-            }
             var inputFields = FindObjectsOfType<InputField>();
             bool goGenerate = true;
             for (int k = 0; k < inputFields.Length; k++)
@@ -109,17 +114,18 @@ namespace DunGen
                         case "Room Max 20":
                             maxRoom = value;
                             break;
-                        case "Room Min 5":
+                        case "Room Min 4":
                             minRoom = value;
                             break;
-                        case "Divide Max 15":
+                        case "Divide Max 25":
                             maxSize = value;
                             break;
                         case "Divide Min 5":
                             minSize = value;
                             break;
                         default:
-                            Debug.Log("Something wrong happened");
+                            //displayErrorDialog("Something wrong happened during value parsing. Please try again. Most likely placeholder text has changed.");
+                            Debug.LogError("Something wrong happened during value parsing. Please try again. Most likely placeholder text has changed.");
                             goGenerate = false;
                             break;
 
@@ -127,7 +133,10 @@ namespace DunGen
                 }
                 else
                 {
-                    Debug.Log("Error occurred with input, please try again");
+                    //displayErrorDialog("Missing 1 or more inputs. Please fill all values.");
+                    Debug.LogError("Missing 1 or more inputs. Please fill all values.");
+                    goGenerate = false;
+                    break;
                 }
 
             }
@@ -139,7 +148,43 @@ namespace DunGen
 
         private bool checkInputs()
         {
-            return minSize > minRoom && minSize <= maxSize;
+            bool valid = true;
+            if (minSize <= minRoom)
+            {
+                //displayErrorDialog("Minimum size of dungeon slice must be bigger than minimum room size!");
+                Debug.LogError("Minimum size of dungeon slice must be bigger than minimum room size!");
+                valid = false;
+            }
+            if (minRoom > maxRoom)
+            {
+                //displayErrorDialog("Minimum room size cannot be bigger than maximum room size!");
+                Debug.LogError("Minimum room size cannot be bigger than maximum room size!");
+                valid = false;
+            }
+            else if (minSize > maxSize)
+            {
+                //displayErrorDialog("Minimum size of dungeon slice cannot be smaller than maximum size!");
+                Debug.LogError("Minimum size of dungeon slice cannot be smaller than maximum size!");
+                valid = false;
+            }
+            else if (maxSize <= maxRoom)
+            {
+                //displayErrorDialog("Maximum size of dungeon slice must be bigger than maximum room size!");
+                Debug.LogError("Maximum size of dungeon slice must be bigger than maximum room size!");
+                valid = false;
+            }
+            else if (maxSize >= mapHeight || maxSize >= mapWidth)
+            {
+                //displayErrorDialog("Maximum size of dungeon slice must be smaller than map dimensions!");
+                Debug.LogError("Maximum size of dungeon slice must be smaller than map dimensions!");
+                valid = false;
+            }
+            return valid;
+        }
+
+        private void displayErrorDialog(string message)
+        {
+            //EditorUtility.DisplayDialog("Error", message, "Ok");
         }
         private void DrawMap()
         {
@@ -174,6 +219,11 @@ namespace DunGen
                 }
             }
         }
+
+        /// <summary>
+        /// Legacy code
+        /// </summary>
+        /// <param name="subDungeon"></param>
         void BSPDraw(SubDungeon subDungeon)
         {
             if (subDungeon == null)
@@ -198,6 +248,10 @@ namespace DunGen
                 BSPDraw(subDungeon.right);
             }
         }
+        /// <summary>
+        /// Legacy code
+        /// </summary>
+        /// <param name="subDungeon"></param>
         void BSPCorDraw(SubDungeon subDungeon)
         {
             if (subDungeon == null)
