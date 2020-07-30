@@ -5,7 +5,6 @@ namespace DunGen
     using System;
     using UnityEngine;
     using UnityEngine.UI;
-    using UnityEditor;
 
     public class MapManager : MonoBehaviour
     {
@@ -28,9 +27,11 @@ namespace DunGen
         // Cave params
         // Room and Maze params
 
-        private void Awake()
+        // Error Window instance
+        private DialogPanel dialogPanel;
+        void Awake()
         {
-
+            dialogPanel = DialogPanel.Instance();
         }
         // Start is called before the first frame update
         void Start()
@@ -74,7 +75,6 @@ namespace DunGen
             mapPositionsFloor = new GameObject[mapWidth, mapHeight];
             if (mapType == 0)
             {
-                Debug.Log("Line 49 in MapManager " + "Check maxSize: " + maxSize + " min: " + minSize + " width: " + mapWidth + " height: " + mapHeight);
                 //BSP
                 generator = new BSPTree<Map>(mapWidth, mapHeight, maxSize, minSize, maxRoom, minRoom, new System.Random(DateTime.Now.Millisecond));
                 map = Map.Create(generator);
@@ -124,8 +124,8 @@ namespace DunGen
                             minSize = value;
                             break;
                         default:
-                            //displayErrorDialog("Something wrong happened during value parsing. Please try again. Most likely placeholder text has changed.");
-                            Debug.LogError("Something wrong happened during value parsing. Please try again. Most likely placeholder text has changed.");
+                            dialogPanel.ShowPanel("Something wrong happened during value parsing. Please try again.");
+                            Debug.Log("Placeholder probably changed so no case");
                             goGenerate = false;
                             break;
 
@@ -133,8 +133,7 @@ namespace DunGen
                 }
                 else
                 {
-                    //displayErrorDialog("Missing 1 or more inputs. Please fill all values.");
-                    Debug.LogError("Missing 1 or more inputs. Please fill all values.");
+                    dialogPanel.ShowPanel("Missing 1 or more inputs. Please fill all values.");
                     goGenerate = false;
                     break;
                 }
@@ -149,43 +148,39 @@ namespace DunGen
         private bool checkInputs()
         {
             bool valid = true;
+            string message = "";
             if (minSize <= minRoom)
             {
-                //displayErrorDialog("Minimum size of dungeon slice must be bigger than minimum room size!");
-                Debug.LogError("Minimum size of dungeon slice must be bigger than minimum room size!");
+                message = "Minimum size of dungeon slice must be bigger than minimum room size!";
                 valid = false;
             }
             if (minRoom > maxRoom)
             {
-                //displayErrorDialog("Minimum room size cannot be bigger than maximum room size!");
-                Debug.LogError("Minimum room size cannot be bigger than maximum room size!");
+                message = "Minimum room size cannot be bigger than maximum room size!";
                 valid = false;
             }
             else if (minSize > maxSize)
             {
-                //displayErrorDialog("Minimum size of dungeon slice cannot be smaller than maximum size!");
-                Debug.LogError("Minimum size of dungeon slice cannot be smaller than maximum size!");
+                message = "Minimum size of dungeon slice cannot be smaller than maximum size!";
                 valid = false;
             }
             else if (maxSize <= maxRoom)
             {
-                //displayErrorDialog("Maximum size of dungeon slice must be bigger than maximum room size!");
-                Debug.LogError("Maximum size of dungeon slice must be bigger than maximum room size!");
+                message = "Maximum size of dungeon slice must be bigger than maximum room size!";
                 valid = false;
             }
             else if (maxSize >= mapHeight || maxSize >= mapWidth)
             {
-                //displayErrorDialog("Maximum size of dungeon slice must be smaller than map dimensions!");
-                Debug.LogError("Maximum size of dungeon slice must be smaller than map dimensions!");
+                message = "Maximum size of dungeon slice must be smaller than map dimensions!";
                 valid = false;
+            }
+            if (!valid)
+            {
+               dialogPanel.ShowPanel(message);
             }
             return valid;
         }
 
-        private void displayErrorDialog(string message)
-        {
-            //EditorUtility.DisplayDialog("Error", message, "Ok");
-        }
         private void DrawMap()
         {
             for (int x = 0; x < map.Width; x++)
